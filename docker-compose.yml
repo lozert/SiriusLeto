@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  postgres:
+    hostname: postgres
+    env_file:
+      - .env
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=${DATABASE_USERNAME}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+      - POSTGRES_DB=${DATABASE_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # используем объявленный volume
+      - ./dump:/docker-entrypoint-initdb.d
+    networks:
+      - app-network
+    ports:
+      - "5433:5432"
+
+volumes:
+  postgres_data:  # объявляем volume
+
+networks:
+  app-network:
+    driver: bridge
