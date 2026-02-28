@@ -5,7 +5,6 @@ import requests
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from MilvusClient import TopicName
 from app.core.logging import get_logger
 from app.db.models.organization import Organization
 from app.db.models.publication import Publication
@@ -26,8 +25,13 @@ class RecommendationService:
 
     def __init__(self):
         self.logger = get_logger(self.__class__.__name__)
-        # Клиент Milvus для коллекции с эмбеддингами топиков
-        self._topic_milvus = TopicName()
+        self._topic_milvus = None  # ленивая инициализация, чтобы не падать при USE_VECTOR_SEARCH=false
+
+    def _get_topic_milvus(self):
+        if self._topic_milvus is None:
+            from MilvusClient import TopicName
+            self._topic_milvus = TopicName()
+        return self._topic_milvus
 
     async def _get_query_embedding(self, query: str) -> list[float]:
         """
@@ -70,7 +74,7 @@ class RecommendationService:
         Ожидается, что primary key коллекции Milvus совпадает с Topic.num.
         """
         try:
-            search_result = await self._topic_milvus.search(
+            search_result = await self._get_topic_milvus().search(
                 embedding=embedding,
                 top_k=top_topics,
                 output_fields=["id"],
@@ -117,6 +121,25 @@ class RecommendationService:
             unique_topic_ids,
         )
         return unique_topic_ids
+
+    async def _get_similar_topic_ids_from_db(
+        self,
+        db: AsyncSession,
+        query: str,
+        top_topics: int,
+    ) -> list[int]:
+        """
+        Fallback: поиск топиков по тексту в PostgreSQL (ILIKE по названию).
+        Используется когда векторы в Milvus ещё не готовы (USE_VECTOR_SEARCH=false или ошибка Milvus).
+        """
+        stmt = (
+            select(Topic.num)
+            .where(Topic.name.ilike(f"%{query}%"))
+            .order_by(Topic.prominence_percentile.desc())
+            .limit(top_topics)
+        )
+        result = await db.execute(stmt)
+        return [row.num for row in result.all()]
 
     async def recommend_organizations_by_topic(
         self,
@@ -185,9 +208,18 @@ class RecommendationService:
             top_topics,
         )
 
-        # 1–2. Векторизуем запрос и находим ближайшие топики в Milvus
-        embedding = await self._get_query_embedding(query)
-        topic_ids = await self._get_similar_topic_ids(embedding=embedding, top_topics=top_topics)
+        # 1–2. Топики: векторный поиск (Milvus) или fallback по тексту в БД
+        topic_ids: list[int] = []
+        if settings.use_vector_search:
+            try:
+                embedding = await self._get_query_embedding(query)
+                topic_ids = await self._get_similar_topic_ids(embedding=embedding, top_topics=top_topics)
+            except Exception as exc:
+                self.logger.warning("Vector search failed, falling back to DB text search: %s", exc)
+        if not topic_ids:
+            topic_ids = await self._get_similar_topic_ids_from_db(db=db, query=query, top_topics=top_topics)
+            if topic_ids:
+                self.logger.debug("Using %d topic ids from DB text search (fallback)", len(topic_ids))
 
         if not topic_ids:
             self.logger.debug("No topic ids found for query=%r", query)
