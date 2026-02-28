@@ -1,0 +1,27 @@
+:root {
+  --bg-dark: #0d0f14;
+  --bg-card: #151922;
+  --accent: #00d4aa;
+  --accent-dim: #00a88a;
+  --text: #e8eaed;
+  --text-muted: #8b92a0;
+  --border: #2a2f3a;
+  --error: #ff6b6b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Outfit', system-ui, sans-serif;
+  background: var(--bg-dark);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100vh;
+}

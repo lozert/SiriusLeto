@@ -17,10 +17,13 @@ class Settings(BaseSettings):
     app_log_level: str = Field("INFO", alias="APP_LOG_LEVEL")
     app_env: str = Field("dev", alias="APP_ENV")
     app_remote_status: str = Field("localhost", alias="APP_REMOTE_STATUS")
+    # Локальный тест без коллекций Milvus: True = векторный поиск, False = поиск топиков по тексту в PostgreSQL
+    use_vector_search: bool = Field(True, alias="USE_VECTOR_SEARCH")
     model_config = SettingsConfigDict(
-        env_file=(".env", "../.env", "/Users/vd/do/PycharmProjects/LangChainSqlAgentTest/science-agent/.env"),
+        env_file=(".env", "../.env"),
         env_file_encoding="utf-8",
         case_sensitive=True,
+        extra="ignore",  # игнорируем лишние переменные из .env (MILVUS_*, POSTGRES_*, DATABASE_*, DB_URL и т.д.)
     )
 
     @property

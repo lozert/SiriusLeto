@@ -3,22 +3,48 @@ services:
     hostname: postgres
     env_file:
       - .env
-    image: postgres:18
+    image: postgres:17
     environment:
       - POSTGRES_USER=${DATABASE_USERNAME}
       - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
       - POSTGRES_DB=${DATABASE_NAME}
     volumes:
-      - postgres_data:/var/lib/postgresql
-      # нужна папка в корне проекта /dump
+      - postgres_data:/var/lib/postgresql/data
       - ./dump:/docker-entrypoint-initdb.d
     networks:
       - app-network
     ports:
       - "5433:5432"
 
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      - DB_URL=postgresql+asyncpg://${DATABASE_USERNAME}:${DATABASE_PASSWORD}@postgres:5432/${DATABASE_NAME}
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+    ports:
+      - "8000:8000"
+    restart: on-failure
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    depends_on:
+      - backend
+    networks:
+      - app-network
+    ports:
+      - "3000:80"
+
 volumes:
-  postgres_data:  # объявляем volume
+  postgres_data:
 
 networks:
   app-network:
