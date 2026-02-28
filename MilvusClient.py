@@ -169,6 +169,17 @@ class PublicationName(MilvusBase):
         super().__init__()
         self.publicationname_collection = Collection(name=str(os.getenv("MILVUS_PUBLICATION", "")))
 
+
+class TopicName(MilvusBase):
+    """
+    Коллекция с эмбеддингами топиков (topic).
+    Ожидается, что primary key совпадает с Topic.num в PostgreSQL.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.topicname_collection = Collection(name=str(os.getenv("MILVUS_TOPIC", "")))
+
 class Conference(MilvusBase):
     def __init__(self):
         super().__init__()
