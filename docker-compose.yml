@@ -10,6 +10,7 @@ services:
       - POSTGRES_DB=${DATABASE_NAME}
     volumes:
       - postgres_data:/var/lib/postgresql
+      # нужна папка в корне проекта /dump
       - ./dump:/docker-entrypoint-initdb.d
     networks:
       - app-network
