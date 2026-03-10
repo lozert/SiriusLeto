@@ -1,4 +1,4 @@
-from typing import List, Protocol, Tuple
+from typing import List, Protocol
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession

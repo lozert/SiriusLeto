@@ -3,7 +3,7 @@ from sqlalchemy import Column, Float, Integer, String
 from app.db.base import Base
 
 
-class Topic(Base):
+class TopicDTO(Base):
     __tablename__ = "topic"
 
     num = Column(Integer, primary_key=True, index=True)

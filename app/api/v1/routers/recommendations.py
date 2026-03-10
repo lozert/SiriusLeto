@@ -26,12 +26,6 @@ async def recommend_universities_by_coefficients(
         ),
     ),
     limit: int = Query(10, ge=1, le=MAX_RESULTS_LIMIT, description="Сколько университетов вернуть (макс. 50)"),
-    top_topics: int = Query(
-        10,
-        ge=1,
-        le=100,
-        description="Сколько ближайших топиков учитывать при расчёте среднего коэффициента",
-    ),
     db: AsyncSession = Depends(get_db_session),
     service: RecommendationService = Depends(get_recommendation_service),
 ):
@@ -46,7 +40,6 @@ async def recommend_universities_by_coefficients(
         db=db,
         query=query,
         limit=min(limit, MAX_RESULTS_LIMIT),
-        top_topics=top_topics,
     )
 
 
